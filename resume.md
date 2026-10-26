@@ -27,7 +27,9 @@ No se observa una base de datos ni una integración externa de datos en estas ru
 5. `computeKPIs` y `computeMonthlyData` en `frontend/src/lib/financial-utils.ts` calculan los datos que se muestran.
 6. `KPIRow` presenta cuatro indicadores; `IncomeOutcomeChart` y `ProfitPercentChart` muestran gráficos mensuales. Mientras carga se muestran `Skeleton`; si falla la petición aparece un mensaje de error.
 
-En el modo local documentado, `frontend/vite.config.ts` reenvía las peticiones que empiezan por `/api` a `http://backend:8000`. En `docker-compose.yml`, el servicio frontend depende de backend y ambos tienen sus puertos publicados en el host.
+En el modo Docker Compose documentado, [frontend/vite.config.ts](frontend/vite.config.ts) reenvía las peticiones que empiezan por `/api` a `http://host.docker.internal:8000`. [docker-compose.yml](docker-compose.yml) configura ese alias mediante `host-gateway`; el proxy accede al puerto `8000` del backend publicado en el host. El servicio frontend depende de backend y ambos tienen sus puertos publicados.
+
+Esta ruta se adoptó como alternativa al fallo observado de comunicación directa entre contenedores, no como requisito general de Docker. Fuera de Docker, no se garantiza que el alias resuelva; las opciones de configuración se explican en el [README en español](README.es.md).
 
 ## 2. Entradas y salidas
 

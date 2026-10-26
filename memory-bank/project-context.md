@@ -30,7 +30,7 @@ La pantalla principal solicita `GET /api/metrics`, calcula KPIs y serie mensual 
 | UI y visualización | Recharts, lucide-react, Tailwind CSS | [package.json](../frontend/package.json), [componentes dashboard](../frontend/src/components/dashboard/), [index.css](../frontend/src/index.css). |
 | Tests/lint frontend | Vitest, ESLint, TypeScript | scripts/declarados en [package.json](../frontend/package.json); prueba existente [financial-utils.test.ts](../frontend/src/lib/financial-utils.test.ts). |
 | Infra local | Docker Compose; contenedores frontend/backend | [docker-compose.yml](../docker-compose.yml), [README.md](../README.md). Puertos publicados: 5173, 8000 y 5678. |
-| Enlace frontend-API | Proxy Vite `/api` → `http://backend:8000` | [vite.config.ts](../frontend/vite.config.ts). |
+| Enlace frontend-API | Proxy Vite `/api` → `http://host.docker.internal:8000` → puerto publicado del backend; alias configurado con `host-gateway` | [vite.config.ts](../frontend/vite.config.ts), [docker-compose.yml](../docker-compose.yml). |
 
 Los valores de `package.json` son rangos semver, no necesariamente versiones instaladas; `backend/requirements.txt` no fija versiones. No afirmar versiones efectivas sin inspeccionar un entorno identificado.
 
@@ -43,6 +43,7 @@ Los valores de `package.json` son rangos semver, no necesariamente versiones ins
 - Dashboard React que carga `/api/metrics`, calcula cuatro KPIs y datos mensuales, y representa dos gráficos ([App.tsx](../frontend/src/App.tsx), [financial-utils.ts](../frontend/src/lib/financial-utils.ts), [kpi-row.tsx](../frontend/src/components/dashboard/kpi-row.tsx)).
 - Pruebas de rutas backend y pruebas unitarias de utilidades frontend presentes ([test_routes.py](../backend/tests/test_routes.py), [financial-utils.test.ts](../frontend/src/lib/financial-utils.test.ts)).
 - Arranque local documentado con `docker compose up --build` ([README.md](../README.md)).
+- La ruta del proxy por el host se adoptó como alternativa a un fallo observado de comunicación directa entre contenedores, no como requisito general de Docker. Depende del alias `extra_hosts` del frontend y del puerto `8000` publicado por el backend. Fuera de Docker, el hostname no está garantizado; consulta las opciones en [README.es.md](../README.es.md).
 
 ### Gaps observables (no son roadmap)
 
@@ -58,6 +59,8 @@ No hay prioridades futuras ni roadmap confirmados en las fuentes citadas. No inv
 ## Verificación conocida
 
 En una sesión previa se reportó que pasaron dos pruebas backend focalizadas, cinco pruebas frontend, ESLint y `docker compose config --quiet` después de resolver el directorio de ejecución. Esto es un resultado histórico de esa sesión, no una garantía del estado actual ni evidencia de que toda la suite haya pasado. Para resultados actuales, volver a ejecutar solo las verificaciones pertinentes y registrar comando/fecha/resultado.
+
+El 2026-10-26, tras cambiar el proxy a `host.docker.internal:8000` y recrear el frontend, `docker compose config --quiet` pasó y `GET http://localhost:5173/api/metrics` respondió HTTP 200 con 360 movimientos. La página principal del frontend respondió HTTP 200. Esta comprobación acredita la entrega de datos a través de Vite, no el renderizado visual del dashboard ni la ejecución de toda la suite.
 
 ## Fuentes de contexto relacionadas
 
