@@ -21,7 +21,8 @@
 ### Contenedores y conexión local
 - Docker Compose orquesta `frontend` y `backend` ([`docker-compose.yml`](docker-compose.yml)).
 - El frontend publica el puerto `5173`; el backend publica `8000` y `5678`.
-- Vite reenvía las solicitudes `/api` a `http://backend:8000` en su configuración ([`frontend/vite.config.ts`](frontend/vite.config.ts)).
+- Vite reenvía las solicitudes `/api` a `http://host.docker.internal:8000`, accediendo al puerto `8000` publicado por el backend. Compose configura el alias mediante `extra_hosts: host.docker.internal:host-gateway` ([`frontend/vite.config.ts`](frontend/vite.config.ts), [`docker-compose.yml`](docker-compose.yml)).
+- Esta ruta es una alternativa al fallo observado de comunicación directa entre contenedores, no un requisito general de Docker. Para ejecutar Vite fuera de Docker, consulta las opciones de proxy y `VITE_API_BASE_URL` en el [README en español](README.es.md).
 
 ## Scripts para arrancar y ejecutar
 

@@ -11,7 +11,11 @@ La verificación se hizo contrastando cada bloque del resumen con los archivos f
 | ✅ | Las rutas de métricas generan datos simulados en memoria. | `backend/app/routes.py`: los endpoints de métricas llaman a `generate_mock_movements(seed=42)`. |
 | ❌ → ✅ | Antes se generalizaba que cada endpoint generaba movimientos. La ruta health no los genera. | `backend/app/routes.py`: `health()` devuelve `{"status":"ok"}` sin llamar al generador. Esta precisión ya se corrigió en `resume.md`. |
 | ✅ | Flujo del frontend: montar React, hacer fetch, calcular KPIs/meses y representar tarjetas y gráficos. | `frontend/index.html`, `frontend/src/main.tsx`, `frontend/src/App.tsx`, `frontend/src/lib/financial-utils.ts`, `frontend/src/components/dashboard/`. |
-| ✅ | Vite proxifica `/api` hacia `http://backend:8000`; Compose configura los puertos y la dependencia frontend→backend. | `frontend/vite.config.ts`, `docker-compose.yml`. |
+| ✅ | Vite proxifica `/api` hacia `http://host.docker.internal:8000`; Compose configura el alias mediante `host-gateway`, los puertos publicados y la dependencia frontend→backend. | [frontend/vite.config.ts](frontend/vite.config.ts), [docker-compose.yml](docker-compose.yml). |
+
+### Comprobación operativa del proxy (2026-10-26)
+
+Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:5173/api/metrics` respondió HTTP 200 con un array JSON de 360 movimientos; la página principal del frontend también respondió HTTP 200. Esto verifica la entrega de datos a través de Vite, no el renderizado visual del dashboard ni toda la suite de pruebas. La ruta por el host se adoptó como alternativa a un timeout observado en la comunicación directa entre contenedores.
 
 ## Entradas, salidas y generación
 
