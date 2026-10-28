@@ -65,3 +65,25 @@ Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:51
 ## Resultado
 
 Se encontró un desajuste de alcance en una frase: `resume.md` decía que cada endpoint generaba movimientos, aunque `/health` solo devuelve un estado. Se corrigió para decir que cada **endpoint de métricas** genera los movimientos y señalar la excepción `/health`. Las demás afirmaciones inspeccionadas concuerdan con el código; las consecuencias dependientes del entorno están señaladas como riesgos o no verificadas.
+
+## Validación práctica de reglas del repositorio (retrospectiva, 2026-10-28)
+
+Esta sección registra trabajo realizado después de la retroalimentación de Fase 3. No afirma que estas tareas se hayan ejecutado durante la fase original. Las reglas se aplicaron a cambios reales del repositorio y se refinaron cuando el caso de trabajo mostró una precisión útil.
+
+| Regla | Tarea y decisión guiada | Evidencia de cambio | Verificación observada |
+|---|---|---|---|
+| `architecture.instructions.md` | Rechazar `start_date > end_date` en la frontera de cada endpoint de métricas que acepta ambos límites, manteniendo el contrato HTTP `422` con detalle consistente. | `backend/app/routes.py`: helper `validate_date_range` invocado en los siete endpoints aplicables. | `cd backend && pytest -q tests/test_routes.py -k 'date_ranges'`: 14 pasaron (7 rangos invertidos rechazados y 7 rangos válidos aceptados). |
+| `testing.instructions.md` | Probar el contrato para los siete endpoints de forma determinista con `TestClient` y parametrización; probar la agrupación mensual con una fecha del primer día del mes. | `backend/tests/test_routes.py`; `frontend/src/lib/financial-utils.test.ts`. | Backend: 14 pasaron, 15 deseleccionados. Frontend: `cd frontend && npm test -- --run src/lib/financial-utils.test.ts`: 1 archivo y 6 pruebas pasaron. |
+| `frontend.instructions.md` | Interpretar `YYYY-MM-DD` como fecha de calendario local al agrupar, evitando que el parseo UTC la mueva al mes anterior en zonas horarias occidentales. | `frontend/src/lib/financial-utils.ts` construye la fecha a partir de año, mes y día; se agregó caso `2025-03-01` en `financial-utils.test.ts`. | La prueba de utilidades Vitest pasó junto con los demás casos del archivo: 6/6. `cd frontend && npm run lint` terminó con código 0 y sin errores. |
+| `naming.instructions.md` | Nombrar el helper Python `validate_date_range` en `snake_case`, mantener tipos explícitos y usar nombres de prueba descriptivos; el cambio TS siguió el estilo del archivo objetivo sin reformatear archivos no relacionados. | `backend/app/routes.py`, `backend/tests/test_routes.py`, `frontend/src/lib/financial-utils.ts`, `frontend/src/lib/financial-utils.test.ts`. | Revisado en el diff. ESLint pasó, pero no se interpreta como validador de todas las convenciones de nombres o formato que no tenga configuradas. |
+| `dx-operations.instructions.md` | Conservar instalaciones frontend reproducibles mediante `npm ci` y validar Compose sin levantar servicios ni confundir `depends_on` con disponibilidad del backend. | No hubo cambios de infraestructura; se instalaron dependencias siguiendo `backend/requirements.txt` y el lockfile npm. | `python -m pip install -r backend/requirements.txt` y `cd frontend && npm ci` finalizaron correctamente; `docker compose config --quiet` finalizó con código 0 y sin diagnóstico. npm reportó 14 vulnerabilidades en dependencias instaladas (1 baja, 5 moderadas, 8 altas); no se ejecutó `npm audit fix`. |
+
+### Refinamientos guiados por la evidencia
+
+- `architecture.instructions.md` ahora especifica que la validación del rango se aplica a **cada endpoint** que acepte ambos límites, para que un contrato compartido no quede aplicado solo a la ruta principal.
+- `frontend.instructions.md` convierte la decisión de calendario en una instrucción implementable: construir la fecha desde sus componentes locales y probar un límite de mes.
+- `testing.instructions.md` pide cubrir todos los endpoints relevantes con pruebas parametrizadas y exige reportar la falta de dependencias como bloqueo, no como prueba aprobada.
+
+### Estado de la evidencia
+
+La validación focalizada de los contratos backend y del cálculo frontend pasó. ESLint y la validación de Compose también terminaron correctamente. Durante la preparación del entorno se registró el resultado de auditoría de npm indicado arriba; no se cambió el lockfile ni se actualizaron dependencias como parte de esta tarea.

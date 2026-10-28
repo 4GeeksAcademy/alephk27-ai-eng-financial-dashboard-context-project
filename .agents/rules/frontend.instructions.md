@@ -14,6 +14,6 @@ applyTo:
 - Conserva estados visibles de carga y error cuando modifiques el fetch; presenta mensajes útiles sin exponer detalles internos del backend.
 - Para peticiones asociadas al ciclo de vida de un componente, considera `AbortController` y define explícitamente si hay reintentos. Evita actualizaciones de estado después de desmontar.
 - Trata el JSON como entrada no confiable y valida sus campos antes de alimentar componentes y utilidades.
-- Maneja explícitamente la semántica de fechas `YYYY-MM-DD`: no mezcles parseo UTC con getters locales sin decidir el comportamiento de zona horaria. Añade prueba para fechas cercanas al cambio de mes si se cambia esta lógica.
+- Trata `YYYY-MM-DD` como fecha de calendario, no como instante UTC: construye la fecha con sus componentes locales antes de agrupar con getters locales. Añade una prueba de límite de mes para evitar desplazamientos de periodo.
 - No asumas que habrá un punto por cada mes: `computeMonthlyData` solo crea meses con movimientos. Si los gráficos requieren meses vacíos, complétalos de forma explícita y prueba esa regla.
 - Mantén los formatos monetarios/fechas coherentes con la interfaz; hoy `financial-utils.ts` usa `USD` y `en-US`, por lo que cualquier cambio debe ser deliberado y probado.

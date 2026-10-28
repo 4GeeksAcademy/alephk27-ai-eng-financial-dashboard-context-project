@@ -18,5 +18,5 @@ applyTo:
 - Antes de agregar o cambiar una agregación, decide si la fuente de verdad será backend o frontend. Si ambos lados deben calcularla, conserva la misma definición y añade cobertura de contrato en las pruebas pertinentes.
 - Valida la forma de JSON recibido en `frontend/src/App.tsx` antes de confiar en el tipo TypeScript, que por sí solo no valida datos en runtime.
 - No fijes etiquetas de periodo que puedan contradecir las fechas recibidas; calcula el periodo a partir de datos/filtros o explica explícitamente la limitación.
-- Valida que `start_date <= end_date` en la frontera de API y decide de forma explícita cómo responden los helpers a colecciones vacías. `build_metrics_facets` actualmente indexa el primer y último elemento.
+- Valida que `start_date <= end_date` en la frontera de cada endpoint que acepte ambos parámetros; conserva un contrato de error coherente. Decide de forma explícita cómo responden los helpers a colecciones vacías. `build_metrics_facets` actualmente indexa el primer y último elemento.
 - No inicialices el RNG global en nuevos generadores compartidos: `generate_mock_movements` usa `random.seed(seed)`. Prefiere un generador local para que llamadas concurrentes no compartan estado.
