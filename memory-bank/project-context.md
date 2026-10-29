@@ -41,6 +41,8 @@ Los valores de `package.json` son rangos semver, no necesariamente versiones ins
 - API con `/health` y endpoints de métricas: movimientos, facets, summary, top categories, comparison, alerts y variantes B2B/B2C ([routes.py](../backend/app/routes.py)).
 - Dataset mock generado al solicitar rutas de métricas; filtros por fecha/categoría/operación y agregaciones implementadas en backend ([routes.py](../backend/app/routes.py)).
 - Dashboard React que carga `/api/metrics`, calcula cuatro KPIs y datos mensuales, y representa dos gráficos ([App.tsx](../frontend/src/App.tsx), [financial-utils.ts](../frontend/src/lib/financial-utils.ts), [kpi-row.tsx](../frontend/src/components/dashboard/kpi-row.tsx)).
+- `App.tsx` valida en runtime el JSON recibido de `/api/metrics` mediante `validateFinancialMovements` antes de tratarlo como movimientos ([App.tsx](../frontend/src/App.tsx), [financial-validation.ts](../frontend/src/lib/financial-validation.ts)). La validación unitaria de payload válido/inválido está documentada en [verification.md](../verification.md); no equivale a una prueba del ciclo HTTP o del renderizado del componente.
+- `build_metrics_facets` devuelve facets vacíos y extremos de fecha nulos cuando no recibe movimientos; hay una prueba focalizada para ese caso ([routes.py](../backend/app/routes.py), [test_routes.py](../backend/tests/test_routes.py)).
 - Pruebas de rutas backend y pruebas unitarias de utilidades frontend presentes ([test_routes.py](../backend/tests/test_routes.py), [financial-utils.test.ts](../frontend/src/lib/financial-utils.test.ts)).
 - Arranque local documentado con `docker compose up --build` ([README.md](../README.md)).
 - La ruta del proxy por el host se adoptó como alternativa a un fallo observado de comunicación directa entre contenedores, no como requisito general de Docker. Depende del alias `extra_hosts` del frontend y del puerto `8000` publicado por el backend. Fuera de Docker, el hostname no está garantizado; consulta las opciones en [README.es.md](../README.es.md).
@@ -58,7 +60,7 @@ No hay prioridades futuras ni roadmap confirmados en las fuentes citadas. No inv
 
 ## Verificación conocida
 
-En una sesión previa se reportó que pasaron dos pruebas backend focalizadas, cinco pruebas frontend, ESLint y `docker compose config --quiet` después de resolver el directorio de ejecución. Esto es un resultado histórico de esa sesión, no una garantía del estado actual ni evidencia de que toda la suite haya pasado. Para resultados actuales, volver a ejecutar solo las verificaciones pertinentes y registrar comando/fecha/resultado.
+En la validación de Fase 3 (2026-10-29) se reportaron: pruebas backend focalizadas de facets, **2 passed, 14 deselected**; `financial-validation.test.ts`, **2 tests pasaron**; `npm run build` completó con advertencia de chunk >500 kB; `npm run lint` y `docker compose config --quiet` terminaron sin errores. Los comandos y límites están en [verification.md](../verification.md). Esto no es evidencia de que toda la suite haya pasado ni de renderizado visual en navegador.
 
 El 2026-10-26, tras cambiar el proxy a `host.docker.internal:8000` y recrear el frontend, `docker compose config --quiet` pasó y `GET http://localhost:5173/api/metrics` respondió HTTP 200 con 360 movimientos. La página principal del frontend respondió HTTP 200. Esta comprobación acredita la entrega de datos a través de Vite, no el renderizado visual del dashboard ni la ejecución de toda la suite.
 

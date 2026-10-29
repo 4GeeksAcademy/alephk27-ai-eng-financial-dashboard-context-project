@@ -17,7 +17,7 @@ La verificación se hizo contrastando cada bloque del resumen con los archivos f
 
 Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:5173/api/metrics` respondió HTTP 200 con un array JSON de 360 movimientos; la página principal del frontend también respondió HTTP 200. Esto verifica la entrega de datos a través de Vite, no el renderizado visual del dashboard ni toda la suite de pruebas. La ruta por el host se adoptó como alternativa a un timeout observado en la comunicación directa entre contenedores.
 
-## Entradas, salidas y generación
+## Entradas, salidas y generación (auditoría inicial)
 
 | Marca | Afirmación de `resume.md` | Evidencia en el repositorio |
 |---|---|---|
@@ -29,7 +29,7 @@ Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:51
 | ✅ | Comparación con intervalo previo de igual duración; porcentaje nulo si anterior neto es 0. | `get_metrics_comparison` en `backend/app/routes.py`: duración `end_date - start_date`, límites previos y condición `previous_net != 0`. |
 | ✅ | Alertas comparan egresos de un periodo con la media de periodos anteriores del resumen. | `detect_outcome_alerts` en `backend/app/routes.py`. |
 | ✅ | No hay validación explícita de orden start/end ni reglas de coherencia entre categoría y operación. | Funciones de filtrado y modelo `FinancialMovement` en `backend/app/routes.py`; validan campos individualmente y no comprueban estas relaciones. |
-| ✅ | `build_metrics_facets` falla ante lista vacía por indexar primer/último elemento. | `build_metrics_facets` accede a `ordered[0]` y `ordered[-1]` en `backend/app/routes.py`. |
+| ✅ (hallazgo inicial, resuelto abajo) | En la auditoría inicial, `build_metrics_facets` fallaba ante lista vacía por indexar primer/último elemento. | Estado previo al cambio: el helper accedía a `ordered[0]` y `ordered[-1]`. La validación de Fase 3, documentada abajo, añadió manejo explícito y prueba. |
 
 ## Frontend, dependencias y ejecución
 
@@ -51,7 +51,7 @@ Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:51
 | ✅ | Comparación divide por `abs(previous_net)`. | `get_metrics_comparison` en `backend/app/routes.py`. |
 | ✅ | El cálculo de alertas usa únicamente elementos presentes en summary y exige baseline > 0. | `detect_outcome_alerts` en `backend/app/routes.py`; la lista se construye después de filtrar en `get_metrics_alerts`. |
 | ✅ | El frontend crea `Date` desde la fecha, usa getters locales y formatea meses/moneda con `en-US`. | `frontend/src/lib/financial-utils.ts`. La variación por zona horaria se identifica como riesgo deducido, no como fallo ejecutado. |
-| ✅ | No hay abort/reintento ni validación runtime del esquema JSON en la carga del dashboard. | `fetchFinancialData` y `useEffect` en `frontend/src/App.tsx`. |
+| ✅ (parcialmente resuelto abajo) | En la auditoría inicial, la carga no tenía abort/reintento ni validación runtime del esquema JSON. | La validación de esquema se añadió en Fase 3; la carga todavía no implementa abort ni reintento. |
 | ✅ | Meses ausentes no se rellenan en la agregación mensual. | `computeMonthlyData` itera movimientos y devuelve solo claves existentes en `monthlyMap`, en `frontend/src/lib/financial-utils.ts`. |
 | ✅ | CORS usa comodines y `allow_credentials=True`. | `backend/app/main.py`. El resumen correctamente limita la conclusión a la configuración declarada, sin afirmar un comportamiento de navegador probado. |
 
@@ -64,4 +64,28 @@ Tras ajustar el proxy y recrear el contenedor frontend, `GET http://localhost:51
 
 ## Resultado
 
-Se encontró un desajuste de alcance en una frase: `resume.md` decía que cada endpoint generaba movimientos, aunque `/health` solo devuelve un estado. Se corrigió para decir que cada **endpoint de métricas** genera los movimientos y señalar la excepción `/health`. Las demás afirmaciones inspeccionadas concuerdan con el código; las consecuencias dependientes del entorno están señaladas como riesgos o no verificadas.
+La auditoría inicial encontró un desajuste de alcance en una frase: `resume.md` decía que cada endpoint generaba movimientos, aunque `/health` solo devuelve un estado. Se corrigió para decir que cada **endpoint de métricas** genera los movimientos y señalar la excepción `/health`. Los hallazgos iniciales sobre facets vacíos y validación runtime también se resolvieron en la validación de Fase 3 que sigue; los otros riesgos dependientes del entorno permanecen señalados como no verificados.
+
+## Validación práctica de reglas — Fase 3 (2026-10-29)
+
+Se probaron las reglas mediante tareas pequeñas en el repositorio. La evidencia describe lo ejecutado en esta sesión; no implica que cada indicación de cada archivo se haya probado exhaustivamente.
+
+| Archivo de reglas | Tarea real y aplicación | Evidencia observada | Evaluación/refinamiento |
+|---|---|---|---|
+| [`architecture.instructions.md`](.agents/rules/architecture.instructions.md) | Manejar explícitamente la colección vacía de `build_metrics_facets` y reflejar que los extremos de fecha pueden faltar en el modelo de respuesta. | `docker compose exec backend pytest -q /app/tests/test_routes.py -k 'metrics_facets or build_metrics_facets'` — **2 passed, 14 deselected**. | La recomendación de definir el comportamiento para colecciones vacías resultó aplicable. El modelo ahora declara `min_date` y `max_date` como opcionales; la lista vacía produce facets vacíos y fechas `null`. |
+| [`testing.instructions.md`](.agents/rules/testing.instructions.md) | Añadir cobertura enfocada para el caso vacío de facets y para datos JSON válidos e inválidos en la validación de movimientos del frontend. | Comando backend anterior — **2 passed**. `docker compose exec frontend npm test -- src/lib/financial-validation.test.ts` — **1 archivo y 2 tests pasaron**. | La guía de casos límite y pruebas deterministas fue concreta y ejecutable. |
+| [`frontend.instructions.md`](.agents/rules/frontend.instructions.md) | Validar en runtime el JSON recibido por `App.tsx` antes de pasarlo a cálculos/UI, conservando el manejo de errores existente. | Prueba Vitest de `financial-validation.test.ts` — **2 tests pasaron**; `docker compose exec frontend npm run build` — **build completado**. | La recomendación de tratar el JSON como entrada no confiable es útil; la validación se aisló en `frontend/src/lib/financial-validation.ts`. El build emitió la advertencia de Vite de que un chunk supera 500 kB. |
+| [`naming.instructions.md`](.agents/rules/naming.instructions.md) | Nombrar el módulo `financial-validation.ts`, la función `validateFinancialMovements` y el predicado `isFinancialMovement` siguiendo kebab-case, camelCase y tipos PascalCase existentes. | `docker compose exec frontend npm run lint` — terminó sin errores. El build TypeScript también completó. | Las convenciones fueron claras para nombrar el código añadido; no se modificaron archivos no relacionados ni se cambió el estilo del archivo objetivo. |
+| [`dx-operations.instructions.md`](.agents/rules/dx-operations.instructions.md) | Verificar la configuración local de Compose y usar los contenedores existentes para ejecutar dependencias declaradas, sin instalar paquetes en el host. | `docker compose config --quiet` — terminó sin errores. Los tests backend y frontend ejecutados con `docker compose exec` pasaron según los resultados anteriores. | La guía de operación local fue coherente con este entorno. No se añadieron dependencias ni se modificó Compose. |
+
+### Archivos de implementación de esta validación
+
+- `backend/app/routes.py`: el modelo de facets permite fechas mínimas/máximas nulas y el helper ya no indexa una lista vacía.
+- `backend/tests/test_routes.py`: prueba del helper con una lista vacía.
+- `frontend/src/lib/financial-validation.ts`: validación runtime de forma, fecha ISO real, importe finito y valores de dominio.
+- `frontend/src/lib/financial-validation.test.ts`: casos válidos e inválidos.
+- `frontend/src/App.tsx`: la respuesta JSON se trata como `unknown` y se valida antes de devolverla como movimientos.
+
+### Limitaciones y resultados de entorno
+
+Se intentó ejecutar `pytest` y `npm test` directamente en el host, pero allí no están instaladas las dependencias (`ModuleNotFoundError: No module named 'fastapi'`; `vitest: not found`). Para obtener evidencia se ejecutaron las pruebas dentro de los contenedores. No se ejecutó la suite completa. No se cambiaron los archivos de reglas: las tareas no aportaron evidencia suficiente para justificar alterar sus instrucciones; se documentan aquí su aplicación y las limitaciones observadas.
