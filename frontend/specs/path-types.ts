@@ -1,4 +1,9 @@
-import type { BusinessType, GroupBy, OperationType } from "./api-types";
+import type {
+  BusinessType,
+  Category,
+  GroupBy,
+  OperationType,
+} from "./api-types";
 
 /**
  * Optional inclusive date bounds shared by metrics endpoints.
@@ -11,6 +16,14 @@ export interface DateRangeFilter {
   end_date?: string;
 }
 
+/** Query parameters accepted by GET /api/metrics. */
+export interface MetricsParams extends DateRangeFilter {
+  /** Optional category filter. */
+  category?: Category;
+  /** Optional operation filter: income or outcome. */
+  operation_type?: OperationType;
+}
+
 /** Query parameters accepted by GET /api/metrics/alerts. */
 export interface AlertsParams extends DateRangeFilter {
   /**
@@ -20,6 +33,18 @@ export interface AlertsParams extends DateRangeFilter {
   threshold?: number;
   /** Aggregation period: day, week, or month; API default is month. */
   group_by?: GroupBy;
+  /** Optional business segment filter: B2B or B2C. */
+  business_type?: BusinessType;
+}
+
+/** Query parameters accepted by GET /api/metrics/summary. */
+export interface SummaryParams extends DateRangeFilter {
+  /** Aggregation period: day, week, or month; API default is month. */
+  group_by?: GroupBy;
+  /** Optional category filter. */
+  category?: Category;
+  /** Optional operation filter: income or outcome. */
+  operation_type?: OperationType;
   /** Optional business segment filter: B2B or B2C. */
   business_type?: BusinessType;
 }

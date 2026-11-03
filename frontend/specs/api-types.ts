@@ -32,6 +32,21 @@ export interface FacetResponse {
   max_date: string | null;
 }
 
+/** One period returned by GET /api/metrics/summary. */
+export interface SummaryItem {
+  /** Period key: YYYY-MM-DD for day, YYYY-Www for week, or YYYY-MM for month. */
+  period: string;
+  /** Sum of income movements in this period and the selected filters. */
+  income: number;
+  /** Sum of outcome movements in this period and the selected filters. */
+  outcome: number;
+  /** Net amount for this period: income minus outcome. */
+  net: number;
+}
+
+/** Array response from GET /api/metrics/summary; empty when no periods match. */
+export type SummaryResponse = SummaryItem[];
+
 /**
  * One item returned by GET /api/metrics/alerts.
  * `baseline_average` reflects the API's average of all earlier grouped periods,
