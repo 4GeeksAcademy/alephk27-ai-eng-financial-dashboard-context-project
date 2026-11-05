@@ -28,7 +28,7 @@
 ## 5. Escribir una skill interna del proyecto
 
 - identifica un gap específico de este repo que las skills comunitarias no cubren bien — p. ej. convenciones de commits, pasos de despliegue de este dashboard, checks de testing/QA antes del merge, reglas de formateo de datos, patrones de uso de API o convenciones UI del dashboard descubiertas en el codebase.
-- redacta el archivo de skill; tú lo refinas a la estructura de clase: objetivo claro, inputs definidos, output esperado, criterios de aceptación.
+- redacta el archivo de skill: objetivo claro, inputs definidos, output esperado, criterios de aceptación.
 - Guárdalo en `.skills/` y cárgalo en el agent para verificar que produce guía accionable en una tarea real de este repo.
 
 ## 6. Actualizar el memory bank

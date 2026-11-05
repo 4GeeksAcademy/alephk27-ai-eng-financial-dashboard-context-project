@@ -61,6 +61,10 @@ describe("computeKPIs", () => {
 });
 
 describe("computeMonthlyData", () => {
+  it("returns an empty list when there are no movements", () => {
+    expect(computeMonthlyData([])).toEqual([]);
+  });
+
   it("returns chronological year-month points with aggregated totals", () => {
     const unsortedCrossYearMovements: FinancialMovement[] = [
       {
@@ -100,6 +104,62 @@ describe("computeMonthlyData", () => {
       outcome: 0,
       profitPercent: 100,
     });
+  });
+
+  it("keeps ISO calendar dates in their stated month at month and year boundaries", () => {
+    const boundaryMovements: FinancialMovement[] = [
+      {
+        create_date: "2024-02-29",
+        amount: 100,
+        operation_type: "income",
+        category: "sales",
+        business_type: "B2B",
+      },
+      {
+        create_date: "2024-03-01",
+        amount: 40,
+        operation_type: "outcome",
+        category: "suppliers",
+        business_type: "B2B",
+      },
+      {
+        create_date: "2025-01-01",
+        amount: 50,
+        operation_type: "income",
+        category: "sales",
+        business_type: "B2C",
+      },
+    ];
+
+    expect(computeMonthlyData(boundaryMovements)).toEqual([
+      { month: "Feb 2024", income: 100, outcome: 0, profitPercent: 100 },
+      { month: "Mar 2024", income: 0, outcome: 40, profitPercent: 0 },
+      { month: "Jan 2025", income: 50, outcome: 0, profitPercent: 100 },
+    ]);
+  });
+
+  it("includes only months that contain movements", () => {
+    const movementsWithGap: FinancialMovement[] = [
+      {
+        create_date: "2024-01-15",
+        amount: 100,
+        operation_type: "income",
+        category: "sales",
+        business_type: "B2B",
+      },
+      {
+        create_date: "2024-03-15",
+        amount: 80,
+        operation_type: "income",
+        category: "sales",
+        business_type: "B2B",
+      },
+    ];
+
+    expect(computeMonthlyData(movementsWithGap).map(({ month }) => month)).toEqual([
+      "Jan 2024",
+      "Mar 2024",
+    ]);
   });
 });
 

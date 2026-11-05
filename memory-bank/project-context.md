@@ -54,6 +54,13 @@ Los valores de `package.json` son rangos semver, no necesariamente versiones ins
 - Las pruebas frontend disponibles cubren utilidades, no el componente `App.tsx` ni su fetch/estados HTTP ([financial-utils.test.ts](../frontend/src/lib/financial-utils.test.ts), [App.tsx](../frontend/src/App.tsx)).
 - La etiqueta de periodo de la interfaz está fijada a 2024, mientras el generador asigna fechas de acuerdo con `date.today()` ([App.tsx](../frontend/src/App.tsx), [routes.py](../backend/app/routes.py)).
 
+## Justificación de las skills incorporadas
+
+Las skills `vitest` y `performance` se incorporaron como guías de trabajo para agentes; no son dependencias de ejecución del dashboard ni sustituyen la configuración o las verificaciones del proyecto.
+
+- **Testing (`.agents/skills/vitest/SKILL.md`):** Es importante para orientar pruebas consistentes con Vitest y con el flujo existente en `frontend/package.json`. La justificación específica es la brecha observable entre las pruebas de utilidades financieras y `App.tsx`: su carga de datos tiene estados de éxito, error HTTP y rechazo de red que las pruebas de helpers no cubren. También ayuda a dirigir cobertura hacia casos límite relevantes de los cálculos. La skill guía cómo realizar ese trabajo; su presencia no demuestra que todas las pruebas sugeridas estén implementadas o pasen. Evidencia: [reglas de testing](../.agents/rules/testing.instructions.md), [prueba de utilidades](../frontend/src/lib/financial-utils.test.ts) y [flujo de App](../frontend/src/App.tsx).
+- **Performance (`.agents/skills/performance/SKILL.md`):** Es importante porque una advertencia previa de build Vite reportó un chunk mayor de 500 kB, lo que justifica inspeccionar y medir el bundle actual y la carga inicial antes de decidir si optimizar. La skill exige distinguir esa evidencia histórica de un problema actual, y apoyar recomendaciones en el build de producción y en trazas de navegador. `App.tsx` usa carga diferida para los gráficos, así que también se debe comprobar qué recursos llegan en la carga inicial. La advertencia por sí sola no prueba una regresión ni impacto en usuarios. Evidencia: [verificación conocida](../verification.md), [App.tsx](../frontend/src/App.tsx) y [flujo de medición de performance](../.agents/skills/performance/references/MEASUREMENT.md).
+
 ### Siguientes prioridades
 
 No hay prioridades futuras ni roadmap confirmados en las fuentes citadas. No inventarlos. Si el usuario solicita priorización, proponer opciones como recomendaciones explícitamente etiquetadas, explicar su evidencia/impacto y pedir confirmación antes de presentarlas como plan acordado.
